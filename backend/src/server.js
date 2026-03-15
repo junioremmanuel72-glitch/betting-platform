@@ -5,12 +5,33 @@ const { PrismaClient } = require('@prisma/client');
 
 dotenv.config();
 
-const prisma = new PrismaClient();
+// Initialize Prisma with error handling
+const prisma = new PrismaClient({
+  log: ['error'],
+  errorFormat: 'minimal'
+});
+
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Test database connection on startup
+async function testDatabaseConnection() {
+  try {
+    await prisma.$connect();
+    console.log('✅ Database connected successfully');
+    
+    // Test query to verify database is working
+    const userCount = await prisma.user.count();
+    console.log(`📊 Database has ${userCount} users`);
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    console.log('⚠️ Server will continue but database features may not work');
+    console.log('📝 Check your DATABASE_URL environment variable');
+  }
+}
 
 // ==================== ROUTES ====================
 const userRoutes = require('./routes/userRoutes');
@@ -51,39 +72,51 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // ==================== SERVER START ====================
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log('\n✅ ==================================');
-  console.log(`✅ Server running on port ${PORT}`);
-  console.log('✅ ==================================\n');
-  
-  console.log('📍 TEST ENDPOINTS:');
-  console.log(`   • Test:        http://localhost:${PORT}/api/test`);
-  console.log(`   • DB Test:     http://localhost:${PORT}/api/db-test\n`);
-  
-  console.log('📍 USER ENDPOINTS:');
-  console.log(`   • Register:    http://localhost:${PORT}/api/users/register`);
-  console.log(`   • Login:       http://localhost:${PORT}/api/users/login`);
-  console.log(`   • Profile:     http://localhost:${PORT}/api/users/profile\n`);
-  
-  console.log('📍 MATCH ENDPOINTS:');
-  console.log(`   • Get All:     http://localhost:${PORT}/api/matches`);
-  console.log(`   • Get One:     http://localhost:${PORT}/api/matches/:id\n`);
-  
-  console.log('📍 BET ENDPOINTS:');
-  console.log(`   • Place Bet:   http://localhost:${PORT}/api/bets (POST)`);
-  console.log(`   • My Bets:     http://localhost:${PORT}/api/bets/my-bets`);
-  console.log(`   • Cashout:     http://localhost:${PORT}/api/bets/:id/cashout\n`);
-  
-  console.log('📍 ADMIN ENDPOINTS:');
-  console.log(`   • Dashboard:   http://localhost:${PORT}/api/admin/dashboard/stats`);
-  console.log(`   • Users:       http://localhost:${PORT}/api/admin/users`);
-  console.log(`   • User Details: http://localhost:${PORT}/api/admin/users/:id`);
-  console.log(`   • Matches:     http://localhost:${PORT}/api/admin/matches`);
-  console.log(`   • Create Match: http://localhost:${PORT}/api/admin/matches (POST)`);
-  console.log(`   • Bets:        http://localhost:${PORT}/api/admin/bets`);
-  console.log(`   • Settle Bet:  http://localhost:${PORT}/api/admin/bets/:id (PATCH)`);
-  console.log(`   • System Stats: http://localhost:${PORT}/api/admin/system/stats\n`);
+// Test database connection before starting server
+testDatabaseConnection().then(() => {
+  app.listen(PORT, () => {
+    console.log('\n✅ ==================================');
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log('✅ ==================================\n');
+    
+    console.log('📍 TEST ENDPOINTS:');
+    console.log(`   • Test:        http://localhost:${PORT}/api/test`);
+    console.log(`   • DB Test:     http://localhost:${PORT}/api/db-test`);
+    console.log(`   • Health:      http://localhost:${PORT}/health\n`);
+    
+    console.log('📍 USER ENDPOINTS:');
+    console.log(`   • Register:    http://localhost:${PORT}/api/users/register`);
+    console.log(`   • Login:       http://localhost:${PORT}/api/users/login`);
+    console.log(`   • Profile:     http://localhost:${PORT}/api/users/profile\n`);
+    
+    console.log('📍 MATCH ENDPOINTS:');
+    console.log(`   • Get All:     http://localhost:${PORT}/api/matches`);
+    console.log(`   • Get One:     http://localhost:${PORT}/api/matches/:id\n`);
+    
+    console.log('📍 BET ENDPOINTS:');
+    console.log(`   • Place Bet:   http://localhost:${PORT}/api/bets (POST)`);
+    console.log(`   • My Bets:     http://localhost:${PORT}/api/bets/my-bets`);
+    console.log(`   • Cashout:     http://localhost:${PORT}/api/bets/:id/cashout\n`);
+    
+    console.log('📍 ADMIN ENDPOINTS:');
+    console.log(`   • Dashboard:   http://localhost:${PORT}/api/admin/dashboard/stats`);
+    console.log(`   • Users:       http://localhost:${PORT}/api/admin/users`);
+    console.log(`   • User Details: http://localhost:${PORT}/api/admin/users/:id`);
+    console.log(`   • Matches:     http://localhost:${PORT}/api/admin/matches`);
+    console.log(`   • Create Match: http://localhost:${PORT}/api/admin/matches (POST)`);
+    console.log(`   • Bets:        http://localhost:${PORT}/api/admin/bets`);
+    console.log(`   • Settle Bet:  http://localhost:${PORT}/api/admin/bets/:id (PATCH)`);
+    console.log(`   • System Stats: http://localhost:${PORT}/api/admin/system/stats\n`);
+  });
+}).catch(err => {
+  console.error('❌ Failed to start server:', err);
+  process.exit(1);
 });
