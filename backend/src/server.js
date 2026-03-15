@@ -1,15 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { PrismaClient } = require('@prisma/client');
+const mongoose = require('mongoose');
 
 dotenv.config();
-
-// Initialize Prisma with error handling
-const prisma = new PrismaClient({
-  log: ['error'],
-  errorFormat: 'minimal'
-});
 
 const app = express();
 
@@ -17,23 +11,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Test database connection on startup
-async function testDatabaseConnection() {
-  try {
-    await prisma.$connect();
-    console.log('✅ Database connected successfully');
-    
-    // Test query to verify database is working
-    const userCount = await prisma.user.count();
-    console.log(`📊 Database has ${userCount} users`);
-  } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    console.log('⚠️ Server will continue but database features may not work');
-    console.log('📝 Check your DATABASE_URL environment variable');
-  }
-}
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://junioremmanuel72_db_user:Adebayor1@cluster0.foilgoh.mongodb.net/betting-platform?retryWrites=true&w=majority&appName=Cluster0';
 
-// ==================== ROUTES ====================
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('✅ MongoDB connected successfully'))
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
+  });
+
+// Routes
 const userRoutes = require('./routes/userRoutes');
 const betRoutes = require('./routes/betRoutes');
 const matchRoutes = require('./routes/matchRoutes');
@@ -57,11 +45,13 @@ app.get('/api/test', (req, res) => {
 // Database test endpoint
 app.get('/api/db-test', async (req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    const dbState = mongoose.connection.readyState;
+    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
     res.json({
       success: true,
-      message: 'Database connected successfully!',
-      database: 'betpawa'
+      message: 'Database connection test',
+      status: states[dbState],
+      database: 'MongoDB Atlas'
     });
   } catch (error) {
     res.status(500).json({
@@ -80,43 +70,37 @@ app.get('/health', (req, res) => {
 // ==================== SERVER START ====================
 const PORT = process.env.PORT || 5000;
 
-// Test database connection before starting server
-testDatabaseConnection().then(() => {
-  app.listen(PORT, () => {
-    console.log('\n✅ ==================================');
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log('✅ ==================================\n');
-    
-    console.log('📍 TEST ENDPOINTS:');
-    console.log(`   • Test:        http://localhost:${PORT}/api/test`);
-    console.log(`   • DB Test:     http://localhost:${PORT}/api/db-test`);
-    console.log(`   • Health:      http://localhost:${PORT}/health\n`);
-    
-    console.log('📍 USER ENDPOINTS:');
-    console.log(`   • Register:    http://localhost:${PORT}/api/users/register`);
-    console.log(`   • Login:       http://localhost:${PORT}/api/users/login`);
-    console.log(`   • Profile:     http://localhost:${PORT}/api/users/profile\n`);
-    
-    console.log('📍 MATCH ENDPOINTS:');
-    console.log(`   • Get All:     http://localhost:${PORT}/api/matches`);
-    console.log(`   • Get One:     http://localhost:${PORT}/api/matches/:id\n`);
-    
-    console.log('📍 BET ENDPOINTS:');
-    console.log(`   • Place Bet:   http://localhost:${PORT}/api/bets (POST)`);
-    console.log(`   • My Bets:     http://localhost:${PORT}/api/bets/my-bets`);
-    console.log(`   • Cashout:     http://localhost:${PORT}/api/bets/:id/cashout\n`);
-    
-    console.log('📍 ADMIN ENDPOINTS:');
-    console.log(`   • Dashboard:   http://localhost:${PORT}/api/admin/dashboard/stats`);
-    console.log(`   • Users:       http://localhost:${PORT}/api/admin/users`);
-    console.log(`   • User Details: http://localhost:${PORT}/api/admin/users/:id`);
-    console.log(`   • Matches:     http://localhost:${PORT}/api/admin/matches`);
-    console.log(`   • Create Match: http://localhost:${PORT}/api/admin/matches (POST)`);
-    console.log(`   • Bets:        http://localhost:${PORT}/api/admin/bets`);
-    console.log(`   • Settle Bet:  http://localhost:${PORT}/api/admin/bets/:id (PATCH)`);
-    console.log(`   • System Stats: http://localhost:${PORT}/api/admin/system/stats\n`);
-  });
-}).catch(err => {
-  console.error('❌ Failed to start server:', err);
-  process.exit(1);
+app.listen(PORT, () => {
+  console.log('\n✅ ==================================');
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log('✅ ==================================\n');
+  
+  console.log('📍 TEST ENDPOINTS:');
+  console.log(`   • Test:        http://localhost:${PORT}/api/test`);
+  console.log(`   • DB Test:     http://localhost:${PORT}/api/db-test`);
+  console.log(`   • Health:      http://localhost:${PORT}/health\n`);
+  
+  console.log('📍 USER ENDPOINTS:');
+  console.log(`   • Register:    http://localhost:${PORT}/api/users/register`);
+  console.log(`   • Login:       http://localhost:${PORT}/api/users/login`);
+  console.log(`   • Profile:     http://localhost:${PORT}/api/users/profile\n`);
+  
+  console.log('📍 MATCH ENDPOINTS:');
+  console.log(`   • Get All:     http://localhost:${PORT}/api/matches`);
+  console.log(`   • Get One:     http://localhost:${PORT}/api/matches/:id\n`);
+  
+  console.log('📍 BET ENDPOINTS:');
+  console.log(`   • Place Bet:   http://localhost:${PORT}/api/bets (POST)`);
+  console.log(`   • My Bets:     http://localhost:${PORT}/api/bets/my-bets`);
+  console.log(`   • Cashout:     http://localhost:${PORT}/api/bets/:id/cashout\n`);
+  
+  console.log('📍 ADMIN ENDPOINTS:');
+  console.log(`   • Dashboard:   http://localhost:${PORT}/api/admin/dashboard/stats`);
+  console.log(`   • Users:       http://localhost:${PORT}/api/admin/users`);
+  console.log(`   • User Details: http://localhost:${PORT}/api/admin/users/:id`);
+  console.log(`   • Matches:     http://localhost:${PORT}/api/admin/matches`);
+  console.log(`   • Create Match: http://localhost:${PORT}/api/admin/matches (POST)`);
+  console.log(`   • Bets:        http://localhost:${PORT}/api/admin/bets`);
+  console.log(`   • Settle Bet:  http://localhost:${PORT}/api/admin/bets/:id (PATCH)`);
+  console.log(`   • System Stats: http://localhost:${PORT}/api/admin/system/stats\n`);
 });
