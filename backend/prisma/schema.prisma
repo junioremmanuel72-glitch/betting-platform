@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "debian-openssl-3.0.x", "windows"]
 }
 
 datasource db {
@@ -50,6 +51,6 @@ model Bet {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  user          User      @relation(fields: [userId], references: [id])
-  match         Match     @relation(fields: [matchId], references: [id])
+  user          User      @relation(fields: [userId], references: [id], onDelete: CASCADE)
+  match         Match     @relation(fields: [matchId], references: [id], onDelete: CASCADE)
 }
