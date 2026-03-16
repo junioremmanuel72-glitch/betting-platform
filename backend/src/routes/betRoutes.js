@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
-
-const prisma = new PrismaClient();
+const Bet = require('../models/Bet');
+const Match = require('../models/Match');
+const User = require('../models/User');
 
 // Middleware to verify token
 const authenticateToken = (req, res, next) => {
@@ -14,7 +14,7 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, user) => {
     if (err) {
       return res.status(403).json({ success: false, message: 'Invalid token' });
     }
@@ -30,10 +30,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const userId = req.user.id;
 
     // Get match details
-    const match = await prisma.match.findUnique({
-      where: { id: matchId }
-    });
-
+    const match = await Match.findById(matchId);
     if (!match) {
       return res.status(404).json({ success: false, message: 'Match not found' });
     }
@@ -62,38 +59,31 @@ router.post('/', authenticateToken, async (req, res) => {
     const potentialWin = stake * odds;
 
     // Check user balance
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
-
+    const user = await User.findById(userId);
     if (user.balance < stake) {
       return res.status(400).json({ success: false, message: 'Insufficient balance' });
     }
 
-    // Create bet and update balance in a transaction
-    const result = await prisma.$transaction([
-      prisma.bet.create({
-        data: {
-          userId,
-          matchId,
-          selection,
-          odds,
-          stake,
-          potentialWin,
-          status: 'pending'
-        }
-      }),
-      prisma.user.update({
-        where: { id: userId },
-        data: { balance: { decrement: stake } }
-      })
-    ]);
+    // Create bet and update balance
+    const bet = await Bet.create({
+      user: userId,
+      match: matchId,
+      selection,
+      odds,
+      stake,
+      potentialWin,
+      status: 'pending'
+    });
+
+    // Update user balance
+    user.balance -= stake;
+    await user.save();
 
     res.json({
       success: true,
       message: 'Bet placed successfully',
-      bet: result[0],
-      newBalance: result[1].balance
+      bet,
+      newBalance: user.balance
     });
 
   } catch (error) {
@@ -104,61 +94,11 @@ router.post('/', authenticateToken, async (req, res) => {
 // Get user's bets
 router.get('/my-bets', authenticateToken, async (req, res) => {
   try {
-    const bets = await prisma.bet.findMany({
-      where: { userId: req.user.id },
-      include: { match: true },
-      orderBy: { createdAt: 'desc' }
-    });
+    const bets = await Bet.find({ user: req.user.id })
+      .populate('match')
+      .sort({ createdAt: 'desc' });
 
     res.json({ success: true, bets });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// Cash out bet
-router.post('/:betId/cashout', authenticateToken, async (req, res) => {
-  try {
-    const betId = req.params.betId;
-    const userId = req.user.id;
-
-    const bet = await prisma.bet.findFirst({
-      where: {
-        id: betId,
-        userId,
-        status: 'pending'
-      }
-    });
-
-    if (!bet) {
-      return res.status(404).json({ success: false, message: 'Bet not found or cannot be cashed out' });
-    }
-
-    // Calculate cashout amount (example: 70% of potential win)
-    const cashoutAmount = bet.potentialWin * 0.7;
-
-    // Update bet and refund user
-    const result = await prisma.$transaction([
-      prisma.bet.update({
-        where: { id: betId },
-        data: {
-          status: 'cashed',
-          cashoutAmount
-        }
-      }),
-      prisma.user.update({
-        where: { id: userId },
-        data: { balance: { increment: cashoutAmount } }
-      })
-    ]);
-
-    res.json({
-      success: true,
-      message: 'Bet cashed out successfully',
-      cashoutAmount,
-      newBalance: result[1].balance
-    });
-
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
