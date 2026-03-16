@@ -14,9 +14,7 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      const response = await fetch('https://betting-platform.up.railway.app/api/users/login', {
-        method: 'POST',
-        headers: {
+     const response = await fetch('https://betting-platform-production-f7be.up.railway.app/api/users/login', {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

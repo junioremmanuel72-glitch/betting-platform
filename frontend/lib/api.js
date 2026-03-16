@@ -1,4 +1,4 @@
-const API_URL = 'https://betting-platform.up.railway.app/api';
+const API_URL = 'https://betting-platform-production-f7be.up.railway.app/api';
 
 // Store token in localStorage
 const getToken = () => {
