@@ -15,27 +15,43 @@ export default function AdminLogin() {
     setError('');
     setLoading(true);
 
+    // Log what we're about to send
+    console.log('=== LOGIN DEBUG ===');
+    console.log('1. Email:', email);
+    console.log('2. Password length:', password.length);
+    
+    const url = 'https://betting-platform-production-f7be.up.railway.app/api/users/login';
+    console.log('3. Fetch URL:', url);
+    
+    const body = JSON.stringify({ email, password });
+    console.log('4. Request body:', body);
+
     try {
-      console.log('Logging in with:', { email, password });
-      
-      const response = await fetch('https://betting-platform-production-f7be.up.railway.app/api/users/login', {
+      console.log('5. Sending request...');
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: body,
       });
 
+      console.log('6. Response status:', response.status);
+      console.log('7. Response headers:', response.headers);
+
       const data = await response.json();
-      console.log('Login response:', data);
+      console.log('8. Response data:', data);
 
       if (data.success) {
+        console.log('9. Login successful!');
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
         router.push('/admin/dashboard');
       } else {
+        console.log('9. Login failed:', data.message);
         setError(data.message || 'Invalid credentials');
       }
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('10. ERROR:', err);
       setError('Connection error. Please try again.');
     } finally {
       setLoading(false);
