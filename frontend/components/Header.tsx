@@ -61,7 +61,7 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Quick Links - MY BETS ADDED HERE */}
+          {/* Quick Links */}
           <div className="hidden md:flex items-center space-x-6">
             <Link href="/sports" className="hover:text-[#F59E0B]">SPORTS</Link>
             <Link href="/live" className="hover:text-[#F59E0B]">LIVE</Link>
@@ -98,7 +98,7 @@ export default function Header() {
                   LOGIN
                 </button>
                 <Link
-                  href="/join"
+                  href="/register"
                   className="bg-[#F59E0B] text-white px-4 py-2 rounded text-sm font-medium hover:bg-orange-600"
                 >
                   JOIN NOW
@@ -121,7 +121,7 @@ export default function Header() {
                 Login
               </button>{' '}
               or{' '}
-              <Link href="/join" className="text-[#F59E0B] hover:underline">
+              <Link href="/register" className="text-[#F59E0B] hover:underline">
                 Join Now
               </Link>
             </span>
