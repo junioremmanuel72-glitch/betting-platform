@@ -1,133 +1,120 @@
-'use client';
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+dotenv.config();
 
-export default function AdminLogin() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const router = useRouter();
+const app = express();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+// CORS configuration - Updated for Vercel frontend
+app.use(cors({
+  origin: [
+    'https://betting-platform-qmuq.vercel.app',
+    'http://localhost:3000',
+    'https://betting-platform-qmuq.vercel.app/',
+    'https://*.vercel.app'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
-    try {
-      const response = await fetch('https://betting-platform-production-f7be.up.railway.app/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: username,
-          password: password,
-        }),
-      });
+// Handle preflight requests
+app.options('*', cors());
 
-      const data = await response.json();
+app.use(express.json());
 
-      if (data.success) {
-        localStorage.setItem('token', data.token);
-        router.push('/admin/dashboard');
-      } else {
-        setError(data.message || 'Invalid credentials');
-      }
-    } catch (err) {
-      setError('Failed to connect to server. Please try again.');
-      console.error('Login error:', err);
-    }
-  };
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://junioremmanuel72_db_user:Adebayor1@cluster0.foilgoh.mongodb.net/betting-platform?retryWrites=true&w=majority&appName=Cluster0';
 
-  return (
-    <div style={{
-      height: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#1a1a2e'
-    }}>
-      <div style={{
-        backgroundColor: '#16213e',
-        padding: '40px',
-        borderRadius: '8px',
-        width: '400px'
-      }}>
-        <h1 style={{ color: 'white', textAlign: 'center', marginBottom: '30px' }}>
-          Admin Login
-        </h1>
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('✅ MongoDB connected successfully'))
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
+  });
 
-        {error && (
-          <div style={{
-            backgroundColor: '#ff000020',
-            color: '#ff0000',
-            padding: '10px',
-            borderRadius: '4px',
-            marginBottom: '20px',
-            textAlign: 'center',
-            border: '1px solid #ff0000'
-          }}>
-            {error}
-          </div>
-        )}
+// Routes
+const userRoutes = require('./routes/userRoutes');
+const betRoutes = require('./routes/betRoutes');
+const matchRoutes = require('./routes/matchRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '15px' }}>
-            <input
-              type="text"
-              placeholder="Email"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: '#0f3460',
-                border: 'none',
-                borderRadius: '4px',
-                color: 'white',
-                fontSize: '16px'
-              }}
-              required
-            />
-          </div>
+app.use('/api/users', userRoutes);
+app.use('/api/bets', betRoutes);
+app.use('/api/matches', matchRoutes);
+app.use('/api/admin', adminRoutes);
 
-          <div style={{ marginBottom: '20px' }}>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: '#0f3460',
-                border: 'none',
-                borderRadius: '4px',
-                color: 'white',
-                fontSize: '16px'
-              }}
-              required
-            />
-          </div>
+// ==================== TEST ROUTES ====================
+// Basic test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Backend is working!',
+    timestamp: new Date().toISOString()
+  });
+});
 
-          <button
-            type="submit"
-            style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: '#F59E0B',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
-          >
-            Login
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
+// Database test endpoint
+app.get('/api/db-test', async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+    res.json({
+      success: true,
+      message: 'Database connection test',
+      status: states[dbState],
+      database: 'MongoDB Atlas'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Database connection failed',
+      error: error.message
+    });
+  }
+});
+
+// Health check endpoint for Render/Railway
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// ==================== SERVER START ====================
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log('\n✅ ==================================');
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log('✅ ==================================\n');
+  
+  console.log('📍 TEST ENDPOINTS:');
+  console.log(`   • Test:        http://localhost:${PORT}/api/test`);
+  console.log(`   • DB Test:     http://localhost:${PORT}/api/db-test`);
+  console.log(`   • Health:      http://localhost:${PORT}/health\n`);
+  
+  console.log('📍 USER ENDPOINTS:');
+  console.log(`   • Register:    http://localhost:${PORT}/api/users/register`);
+  console.log(`   • Login:       http://localhost:${PORT}/api/users/login`);
+  console.log(`   • Profile:     http://localhost:${PORT}/api/users/profile\n`);
+  
+  console.log('📍 MATCH ENDPOINTS:');
+  console.log(`   • Get All:     http://localhost:${PORT}/api/matches`);
+  console.log(`   • Get One:     http://localhost:${PORT}/api/matches/:id\n`);
+  
+  console.log('📍 BET ENDPOINTS:');
+  console.log(`   • Place Bet:   http://localhost:${PORT}/api/bets (POST)`);
+  console.log(`   • My Bets:     http://localhost:${PORT}/api/bets/my-bets`);
+  console.log(`   • Cashout:     http://localhost:${PORT}/api/bets/:id/cashout\n`);
+  
+  console.log('📍 ADMIN ENDPOINTS:');
+  console.log(`   • Dashboard:   http://localhost:${PORT}/api/admin/dashboard/stats`);
+  console.log(`   • Users:       http://localhost:${PORT}/api/admin/users`);
+  console.log(`   • User Details: http://localhost:${PORT}/api/admin/users/:id`);
+  console.log(`   • Matches:     http://localhost:${PORT}/api/admin/matches`);
+  console.log(`   • Create Match: http://localhost:${PORT}/api/admin/matches (POST)`);
+  console.log(`   • Bets:        http://localhost:${PORT}/api/admin/bets`);
+  console.log(`   • Settle Bet:  http://localhost:${PORT}/api/admin/bets/:id (PATCH)`);
+  console.log(`   • System Stats: http://localhost:${PORT}/api/admin/system/stats\n`);
+});
