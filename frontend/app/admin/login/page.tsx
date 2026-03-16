@@ -4,94 +4,127 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminLogin() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-
-    // Log what we're about to send
-    console.log('=== LOGIN DEBUG ===');
-    console.log('1. Email:', email);
-    console.log('2. Password length:', password.length);
-    
-    const url = 'https://betting-platform-production-f7be.up.railway.app/api/users/login';
-    console.log('3. Fetch URL:', url);
-    
-    const body = JSON.stringify({ email, password });
-    console.log('4. Request body:', body);
 
     try {
-      console.log('5. Sending request...');
-      const response = await fetch(url, {
+      const response = await fetch('https://betting-api-7fs2.onrender.com/api/users/login', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
         },
-        body: body,
+        body: JSON.stringify({
+          email: username,
+          password: password,
+        }),
       });
 
-      console.log('6. Response status:', response.status);
-      console.log('7. Response headers:', response.headers);
-
       const data = await response.json();
-      console.log('8. Response data:', data);
 
       if (data.success) {
-        console.log('9. Login successful!');
         localStorage.setItem('token', data.token);
         router.push('/admin/dashboard');
       } else {
-        console.log('9. Login failed:', data.message);
         setError(data.message || 'Invalid credentials');
       }
     } catch (err) {
-      console.error('10. ERROR:', err);
-      setError('Connection error. Please try again.');
-    } finally {
-      setLoading(false);
+      setError('Failed to connect to server. Please try again.');
+      console.error('Login error:', err);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center">
-      <div className="bg-[#16213e] p-8 rounded-lg w-96">
-        <h1 className="text-2xl text-white font-bold text-center mb-6">Admin Login</h1>
-        
+    <div style={{
+      height: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#1a1a2e'
+    }}>
+      <div style={{
+        backgroundColor: '#16213e',
+        padding: '40px',
+        borderRadius: '8px',
+        width: '400px'
+      }}>
+        <h1 style={{ color: 'white', textAlign: 'center', marginBottom: '30px' }}>
+          Admin Login
+        </h1>
+
         {error && (
-          <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-sm">
+          <div style={{
+            backgroundColor: '#ff000020',
+            color: '#ff0000',
+            padding: '10px',
+            borderRadius: '4px',
+            marginBottom: '20px',
+            textAlign: 'center',
+            border: '1px solid #ff0000'
+          }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 mb-4 bg-[#0f3460] text-white rounded border-none"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 mb-6 bg-[#0f3460] text-white rounded border-none"
-            required
-          />
+          <div style={{ marginBottom: '15px' }}>
+            <input
+              type="text"
+              placeholder="Email"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#0f3460',
+                border: 'none',
+                borderRadius: '4px',
+                color: 'white',
+                fontSize: '16px'
+              }}
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#0f3460',
+                border: 'none',
+                borderRadius: '4px',
+                color: 'white',
+                fontSize: '16px'
+              }}
+              required
+            />
+          </div>
+
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-[#F59E0B] text-white py-3 rounded font-bold hover:bg-[#d48806] disabled:opacity-50"
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: '#F59E0B',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            Login
           </button>
         </form>
       </div>
