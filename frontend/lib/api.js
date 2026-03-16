@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://betting-platform.up.railway.app/api';
 
 // Store token in localStorage
 const getToken = () => {
@@ -11,12 +11,6 @@ const getToken = () => {
 const setToken = (token) => {
   if (typeof window !== 'undefined') {
     localStorage.setItem('token', token);
-  }
-};
-
-const removeToken = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('token');
   }
 };
 
@@ -36,17 +30,6 @@ const getHeaders = () => {
 
 // User API
 export const userAPI = {
-  register: async (email, password, name) => {
-    const res = await fetch(`${API_URL}/users/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name })
-    });
-    const data = await res.json();
-    if (data.success) setToken(data.token);
-    return data;
-  },
-
   login: async (email, password) => {
     const res = await fetch(`${API_URL}/users/login`, {
       method: 'POST',
@@ -54,13 +37,10 @@ export const userAPI = {
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    if (data.success) {
-      setToken(data.token);
-    }
+    if (data.success) setToken(data.token);
     return data;
   },
 
-  // THIS IS THE getProfile FUNCTION YOU NEED
   getProfile: async () => {
     const res = await fetch(`${API_URL}/users/profile`, {
       headers: getHeaders()
@@ -74,11 +54,6 @@ export const matchesAPI = {
   getAll: async () => {
     const res = await fetch(`${API_URL}/matches`);
     return res.json();
-  },
-
-  getOne: async (id) => {
-    const res = await fetch(`${API_URL}/matches/${id}`);
-    return res.json();
   }
 };
 
@@ -90,20 +65,11 @@ export const betsAPI = {
       headers: getHeaders(),
       body: JSON.stringify({ matchId, selection, stake })
     });
-    
     return res.json();
   },
 
   getMyBets: async () => {
     const res = await fetch(`${API_URL}/bets/my-bets`, {
-      headers: getHeaders()
-    });
-    return res.json();
-  },
-
-  cashout: async (betId) => {
-    const res = await fetch(`${API_URL}/bets/${betId}/cashout`, {
-      method: 'POST',
       headers: getHeaders()
     });
     return res.json();

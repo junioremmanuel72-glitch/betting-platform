@@ -1,22 +1,41 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function LoginPage() {
-  const [username, setUsername] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
+export default function AdminLogin() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (username === 'admin' && password === 'admin123') {
-      localStorage.setItem('adminAuth', 'true');
-      router.push('/admin/dashboard');
-    } else {
-      setError('Invalid credentials');
+    setError('');
+
+    try {
+      const response = await fetch('https://betting-platform.up.railway.app/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: username,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem('token', data.token);
+        router.push('/admin/dashboard');
+      } else {
+        setError(data.message || 'Invalid credentials');
+      }
+    } catch (err) {
+      setError('Failed to connect to server. Please try again.');
+      console.error('Login error:', err);
     }
   };
 
@@ -56,7 +75,7 @@ export default function LoginPage() {
           <div style={{ marginBottom: '15px' }}>
             <input
               type="text"
-              placeholder="Username"
+              placeholder="Email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               style={{
