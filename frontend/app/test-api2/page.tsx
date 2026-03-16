@@ -22,7 +22,8 @@ export default function TestAPI2() {
         }
       } catch (error) {
         console.error('API test error:', error);
-        setStatus(`❌ Error: ${error.message}`);
+        // Fixed: Handle unknown error type
+        setStatus(`❌ Error: ${error instanceof Error ? error.message : String(error)}`);
       }
     };
     testAPI();
@@ -33,8 +34,8 @@ export default function TestAPI2() {
       <h1>API Test Page 2</h1>
       <div style={{ 
         padding: '10px', 
-        background: status.includes('✅') ? '#d4edda' : '#f8d7da',
-        border: `1px solid ${status.includes('✅') ? '#c3e6cb' : '#f5c6cb'}`,
+        background: status.includes('✅') ? '#d4edda' : status.includes('❌') ? '#f8d7da' : '#fff3cd',
+        border: `1px solid ${status.includes('✅') ? '#c3e6cb' : status.includes('❌') ? '#f5c6cb' : '#ffeeba'}`,
         borderRadius: '4px',
         marginBottom: '20px'
       }}>
