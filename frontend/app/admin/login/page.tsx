@@ -1,92 +1,140 @@
-export const API_URL = 'https://betting-platform-production-f7be.up.railway.app/api';
+'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { API_URL } from '@/lib/api';
 
-// Store token in localStorage
-const getToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
-  }
-  return null;
-};
+export default function AdminLogin() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const router = useRouter();
 
-const setToken = (token) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('token', token);
-  }
-};
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
 
-// Helper to create headers with auth
-const getHeaders = () => {
-  const headers = {
-    'Content-Type': 'application/json',
+    try {
+      console.log('Attempting to login with:', { email: username });
+      console.log('API_URL:', API_URL);
+      
+      const response = await fetch(`${API_URL}/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: username,
+          password: password,
+        }),
+      });
+
+      console.log('Response status:', response.status);
+      
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (data.success) {
+        localStorage.setItem('token', data.token);
+        router.push('/admin/dashboard');
+      } else {
+        setError(data.message || 'Invalid credentials');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Failed to connect to server. Please try again.');
+    }
   };
 
-  const token = getToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  return (
+    <div style={{
+      height: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#1a1a2e'
+    }}>
+      <div style={{
+        backgroundColor: '#16213e',
+        padding: '40px',
+        borderRadius: '8px',
+        width: '400px'
+      }}>
+        <h1 style={{ color: 'white', textAlign: 'center', marginBottom: '30px' }}>
+          Admin Login
+        </h1>
 
-  return headers;
-};
+        {error && (
+          <div style={{
+            backgroundColor: '#ff000020',
+            color: '#ff0000',
+            padding: '10px',
+            borderRadius: '4px',
+            marginBottom: '20px',
+            textAlign: 'center',
+            border: '1px solid #ff0000'
+          }}>
+            {error}
+          </div>
+        )}
 
-// User API
-export const userAPI = {
-  login: async (email, password) => {
-    const res = await fetch(`${API_URL}/users/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
-    const data = await res.json();
-    if (data.success) setToken(data.token);
-    return data;
-  },
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '15px' }}>
+            <input
+              type="text"
+              placeholder="Email"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#0f3460',
+                border: 'none',
+                borderRadius: '4px',
+                color: 'white',
+                fontSize: '16px'
+              }}
+              required
+            />
+          </div>
 
-  getProfile: async () => {
-    const res = await fetch(`${API_URL}/users/profile`, {
-      headers: getHeaders()
-    });
-    return res.json();
-  }
-};
+          <div style={{ marginBottom: '20px' }}>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#0f3460',
+                border: 'none',
+                borderRadius: '4px',
+                color: 'white',
+                fontSize: '16px'
+              }}
+              required
+            />
+          </div>
 
-// Matches API
-export const matchesAPI = {
-  getAll: async () => {
-    const res = await fetch(`${API_URL}/matches`);
-    return res.json();
-  },
-
-  getOne: async (id) => {
-    const res = await fetch(`${API_URL}/matches/${id}`);
-    return res.json();
-  }
-};
-
-// Bets API
-export const betsAPI = {
-  placeBet: async (matchId, selection, stake) => {
-    const res = await fetch(`${API_URL}/bets`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ matchId, selection, stake })
-    });
-    return res.json();
-  },
-
-  getMyBets: async () => {
-    const res = await fetch(`${API_URL}/bets/my-bets`, {
-      headers: getHeaders()
-    });
-    return res.json();
-  },
-
-  cashout: async (betId) => {
-    const res = await fetch(`${API_URL}/bets/${betId}/cashout`, {
-      method: 'POST',
-      headers: getHeaders()
-    });
-    return res.json();
-  }
-};
+          <button
+            type="submit"
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: '#F59E0B',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Login
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
