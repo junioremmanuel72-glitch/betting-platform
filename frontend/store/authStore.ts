@@ -47,7 +47,14 @@ export const useAuthStore = create<AuthStore>()(
 
       register: async (email: string, password: string, name: string) => {
         try {
-          const result = await userAPI.register(email, password, name);
+          // Using fetch directly since userAPI doesn't have register
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, name })
+          });
+          const result = await response.json();
+          
           if (result.success) {
             localStorage.setItem('token', result.token);
             set({ 
@@ -72,7 +79,6 @@ export const useAuthStore = create<AuthStore>()(
         return !!token && isAuthenticated;
       },
 
-      // THIS IS THE MISSING FUNCTION
       updateBalance: (newBalance: number) => {
         set((state) => ({
           user: state.user ? { ...state.user, balance: newBalance } : null
