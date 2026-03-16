@@ -1,3 +1,4 @@
+// DEBUG: Hardcoded Railway URL - v3
 'use client';
 
 import { useState } from 'react';
