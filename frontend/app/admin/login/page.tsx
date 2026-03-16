@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { API_URL } from '@/lib/api';
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
@@ -16,9 +15,8 @@ export default function AdminLogin() {
 
     try {
       console.log('Attempting to login with:', { email: username });
-      console.log('API_URL:', API_URL);
       
-      const response = await fetch(`${API_URL}/users/login`, {
+      const response = await fetch('https://betting-platform-production-f7be.up.railway.app/api/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
